@@ -52,6 +52,19 @@ const ItemCtrl = (function () {
 
             return found;
         },
+        deleteItem: function(id) {
+            // Get ids
+            const ids = data.items.map(function(item) {
+                return item.id;
+            });
+
+            // Get index
+            const index = ids.indexOf(id);
+
+            // Remove item
+            data.items.splice(index, 1);
+
+        },
         setCurrentItem: function(item) {
             data.currentItem = item;
         },
@@ -160,6 +173,11 @@ const UICtrl = (function () {
             document.querySelector(UISelectors.itemCaloriesInput).value = ItemCtrl.getCurrentItem().calories;
             UICtrl.showEditState();
         },
+        deleteListItem: function(id) {
+            const itemId = `#item-${id}`;
+            const item = document.querySelector(itemId);
+            item.remove();
+        },
         getSelectors: function() {
             return UISelectors;
         },
@@ -175,7 +193,7 @@ const UICtrl = (function () {
         showTotalCalories: function(totalCalories) {
             document.querySelector(UISelectors.totalCalories).textContent = totalCalories;
         },
-        clearEditState: function() {
+        clearEditState: function(e) {
             // clear input fields
             UICtrl.clearInput();
             document.querySelector(UISelectors.updateBtn).style.display = "none";
@@ -185,8 +203,7 @@ const UICtrl = (function () {
             // When Edit State is cleared, Add Meal Button is showing
             // Code below makes the button clickable again
             // This method allows 'Enter' Keypress when not in Edit State
-            document.querySelector(UISelectors.addBtn).disabled = false;
-            
+            document.querySelector(UISelectors.addBtn).disabled = false;            
         },
         showEditState: function() {
             document.querySelector(UISelectors.updateBtn).style.display = "inline";
@@ -209,17 +226,26 @@ const App = (function (ItemCtrl, UICtrl) {
         const UISelectors = UICtrl.getSelectors();
 
         // Add event listeners
-        document.querySelector(UISelectors.addBtn).addEventListener("click", ItemAddSubmit);
+        document.querySelector(UISelectors.addBtn).addEventListener("click", itemAddSubmit);
 
         // Edit icon click Event
         document.querySelector(UISelectors.itemList).addEventListener("click", itemEditClick);
 
         // Update item event
         document.querySelector(UISelectors.updateBtn).addEventListener("click", itemUpdateSubmit);
+
+        // Delete item event
+        document.querySelector(UISelectors.deleteBtn).addEventListener("click", itemDeleteSubmit);
+
+        // Back button event
+        document.querySelector(UISelectors.backBtn).addEventListener("click", (e) => {
+            UICtrl.clearEditState();
+            e.preventDefault();
+        });
     }
 
     // Add item submit
-    const ItemAddSubmit = function(e) {
+    const itemAddSubmit = function(e) {
         // Get form input from UI Controller
         const input = UICtrl.getItemInput();
         // Check for name and calorie input
@@ -283,6 +309,28 @@ const App = (function (ItemCtrl, UICtrl) {
         e.preventDefault();
     }
 
+    // Delete item submit
+    const itemDeleteSubmit = function(e) {
+        // get current item id
+        const id = ItemCtrl.getCurrentItem().id;
+
+        // delete from data structure
+        ItemCtrl.deleteItem(id);
+
+        // delete from UI
+        UICtrl.deleteListItem(id);
+
+        // Get total calories
+        const totalCalories = ItemCtrl.getTotalCalories();
+
+        // Add total calories to UI
+        UICtrl.showTotalCalories(totalCalories);
+
+        UICtrl.clearEditState(); 
+
+        e.preventDefault();
+    }
+
 
     // Public methods
     return {
@@ -292,7 +340,6 @@ const App = (function (ItemCtrl, UICtrl) {
             UICtrl.clearEditState();
             // Fetch items from data structure
             const items = ItemCtrl.getItems();
-            console.log(items);
             // Check if any items
             if(items.length > 0) {
                 // Populate list with items
